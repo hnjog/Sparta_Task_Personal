@@ -4,26 +4,60 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "InputActionValue.h"
 #include "TaskCharacter.generated.h"
+
+class UCameraComponent;
+class USpringArmComponent;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class TAGNCHASE_API ATaskCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+#pragma region ACharacter Override
 public:
-	// Sets default values for this character's properties
 	ATaskCharacter();
 
-protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+#pragma endregion
+
+#pragma region TaskPlayerCharacter Components
+public:
+	FORCEINLINE USpringArmComponent* GetSpringArm() const { return SpringArm; }
+
+	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
+	TObjectPtr<USpringArmComponent> SpringArm;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
+	TObjectPtr<UCameraComponent> Camera;
+#pragma endregion
+
+#pragma region Input
+private:
+	void HandleMoveInput(const FInputActionValue& InValue);
+
+	void HandleLookInput(const FInputActionValue& InValue);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
+	TObjectPtr<UInputMappingContext> InputMappingContext;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
+	TObjectPtr<UInputAction> MoveAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
+	TObjectPtr<UInputAction> LookAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
+	TObjectPtr<UInputAction> JumpAction;
+#pragma endregion
 
 };
