@@ -24,6 +24,8 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	virtual bool IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const override;
+
 private:
 	UFUNCTION()
 	void OnRep_ServerRotationYaw();
@@ -39,4 +41,10 @@ protected:
 	float ServerRotationYaw;
 
 	float RotationSpeed;
+
+	float NetUpdatePeriod;
+
+	float AccDeltaSecondSinceReplicated;
+
+	float NetCullDistance;
 };
