@@ -20,6 +20,14 @@ public:
 
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
+	UFUNCTION()
+	void OnRep_ServerRotationYaw();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -27,4 +35,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
+	UPROPERTY(ReplicatedUsing = OnRep_ServerRotationYaw)
+	float ServerRotationYaw;
+
+	float RotationSpeed;
 };
