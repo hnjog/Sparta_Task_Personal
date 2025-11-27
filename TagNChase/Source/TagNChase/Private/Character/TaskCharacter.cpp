@@ -7,6 +7,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
+#include "Gimmick/TNLandMine.h"
 
 ATaskCharacter::ATaskCharacter()
 {
@@ -57,7 +58,8 @@ void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::HandleLookInput);
 
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-	EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+	EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping); 
+	EIC->BindAction(LandMineAction, ETriggerEvent::Started, this, &ThisClass::HandleLandMineInput);
 }
 
 void ATaskCharacter::HandleMoveInput(const FInputActionValue& InValue)
@@ -94,3 +96,26 @@ void ATaskCharacter::HandleLookInput(const FInputActionValue& InValue)
 	AddControllerPitchInput(InLookVector.Y);
 }
 
+void ATaskCharacter::HandleLandMineInput(const FInputActionValue& InValue)
+{
+	if (IsLocallyControlled() == true)
+	{
+		ServerRPCSpawnLandMine();
+	}
+}
+
+
+void ATaskCharacter::ServerRPCSpawnLandMine_Implementation()
+{
+	if (IsValid(LandMineClass) == true)
+	{
+		FVector SpawnedLocation = (GetActorLocation() + GetActorForwardVector() * 300.f) - FVector(0.f, 0.f, 90.f);
+		ATNLandMine* SpawnedLandMine = GetWorld()->SpawnActor<ATNLandMine>(LandMineClass, SpawnedLocation, FRotator::ZeroRotator);
+		SpawnedLandMine->SetOwner(this);
+	}
+}
+
+bool ATaskCharacter::ServerRPCSpawnLandMine_Validate()
+{
+	return true;
+}
