@@ -3,6 +3,7 @@
 
 #include "Component/TNStatusComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "TagNChase.h"
 
 // Sets default values for this component's properties
 UTNStatusComponent::UTNStatusComponent()
@@ -57,10 +58,12 @@ void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 
 void UTNStatusComponent::OnRep_CurrentHP()
 {
+	TN_LOG_SUBOBJECT_ROLE(LogTNNet, Log, TEXT("CurrentHP: %.1f"), CurrentHP);
 	OnCurrentHPChanged.Broadcast(CurrentHP);
 }
 
 void UTNStatusComponent::OnRep_MaxHP()
 {
+	TN_LOG_SUBOBJECT_ROLE(LogTNNet, Log, TEXT("MaxHP: %.1f"), MaxHP);
 	OnMaxHPChanged.Broadcast(MaxHP);
 }
