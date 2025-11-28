@@ -9,8 +9,18 @@
 #include "EnhancedInputComponent.h"
 #include "Gimmick/TNLandMine.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/CapsuleComponent.h"
+#include "Engine/DamageEvents.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "GameFramework/GameStateBase.h"
+#include "EngineUtils.h"
 
-ATaskCharacter::ATaskCharacter()
+ATaskCharacter::ATaskCharacter() 
+	: bCanAttack(true)
+	, MeleeAttackMontagePlayTime(0.f)
+	, LastStartMeleeAttackTime(0.f)
+	, MeleeAttackTimeDifference(0.f)
+	, MinAllowedTimeForMeleeAttack(0.02f)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -34,7 +44,6 @@ ATaskCharacter::ATaskCharacter()
 
 void ATaskCharacter::BeginPlay()
 {
-
 	Super::BeginPlay();
 	if (IsLocallyControlled() == true)
 	{
@@ -45,6 +54,11 @@ void ATaskCharacter::BeginPlay()
 		checkf(IsValid(EILPS) == true, TEXT("EnhancedInputLocalPlayerSubsystem is invalid."));
 
 		EILPS->AddMappingContext(InputMappingContext, 0);
+	}
+
+	if (IsValid(MeleeAttackMontage) == true)
+	{
+		MeleeAttackMontagePlayTime = MeleeAttackMontage->GetPlayLength();
 	}
 }
 
@@ -61,6 +75,7 @@ void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping); 
 	EIC->BindAction(LandMineAction, ETriggerEvent::Started, this, &ThisClass::HandleLandMineInput);
+	EIC->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ThisClass::HandleMeleeAttackInput);
 }
 
 void ATaskCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -68,6 +83,7 @@ void ATaskCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, CurrentAimPitch);
+	DOREPLIFETIME(ThisClass, bCanAttack);
 }
 
 void ATaskCharacter::Tick(float DeltaTime)
@@ -128,6 +144,192 @@ void ATaskCharacter::HandleLandMineInput(const FInputActionValue& InValue)
 	if (IsLocallyControlled() == true)
 	{
 		ServerRPCSpawnLandMine();
+	}
+}
+
+void ATaskCharacter::HandleMeleeAttackInput(const FInputActionValue& InValue)
+{
+	if (true == bCanAttack &&
+		GetCharacterMovement()->IsFalling() == false)
+	{
+		ServerRPCMeleeAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+
+		if (HasAuthority() == false && IsLocallyControlled() == true)
+		{
+			PlayMeleeAttackMontage();
+		}
+	}
+}
+
+float ATaskCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	UKismetSystemLibrary::PrintString(GetWorld(), FString::Printf(TEXT("TakeDamage: %f"), DamageAmount), true, true, FLinearColor::Red, 5.f);
+
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+}
+
+void ATaskCharacter::CheckMeleeAttackHit()
+{
+	if (IsLocallyControlled() == true)
+	{
+		TArray<FHitResult> OutHitResults;
+		TSet<ACharacter*> DamagedCharacters;
+		FCollisionQueryParams Params(NAME_None, false, this);
+
+		const float MeleeAttackRange = 50.f;
+		const float MeleeAttackRadius = 50.f;
+		const FVector Forward = GetActorForwardVector();
+		const FVector Start = GetActorLocation() + Forward * GetCapsuleComponent()->GetScaledCapsuleRadius();
+		const FVector End = Start + GetActorForwardVector() * MeleeAttackRange;
+
+		bool bIsHitDetected = GetWorld()->SweepMultiByChannel(OutHitResults, Start, End, FQuat::Identity, ECC_Camera, FCollisionShape::MakeSphere(MeleeAttackRadius), Params);
+		if (bIsHitDetected == true)
+		{
+			for (auto const& OutHitResult : OutHitResults)
+			{
+				ACharacter* DamagedCharacter = Cast<ACharacter>(OutHitResult.GetActor());
+				if (IsValid(DamagedCharacter) == true)
+				{
+					DamagedCharacters.Add(DamagedCharacter);
+				}
+			}
+
+			FDamageEvent DamageEvent;
+			for (auto const& DamagedCharacter : DamagedCharacters)
+			{
+				ServerRPCPerformMeleeHit(DamagedCharacter, GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
+			}
+		}
+
+		FColor DrawColor = bIsHitDetected ? FColor::Green : FColor::Red;
+		DrawDebugMeleeAttack(DrawColor, Start, End, Forward);
+	}
+}
+
+void ATaskCharacter::DrawDebugMeleeAttack(const FColor& DrawColor, FVector TraceStart, FVector TraceEnd, FVector Forward)
+{
+	const float MeleeAttackRange = 50.f;
+	const float MeleeAttackRadius = 50.f;
+	FVector CapsuleOrigin = TraceStart + (TraceEnd - TraceStart) * 0.5f;
+	float CapsuleHalfHeight = MeleeAttackRange * 0.5f;
+	DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, MeleeAttackRadius, FRotationMatrix::MakeFromZ(Forward).ToQuat(), DrawColor, false, 5.0f);
+}
+
+void ATaskCharacter::ServerRPCMeleeAttack_Implementation(float InStartMeleeAttackTime)
+{
+	// 우리가 하고자 하는 것은, 너무 빠르게 공격 입력이 들어오는 것을 막아보고자 함.
+	// 애님 몽타주가 끝나기 전에는 다시 공격 하지 못하게 하고 싶음.
+	// 근데 공격 입력을 했다고해서 그 즉시 서버에서도 공격 입력을 확인 할 순 없음.
+	// 유저 입장에선 억울하니까 서버로 "공격이 입력되었다"는 신호가 가는데까지 걸리는 서버딜레이는 빼줘야함.
+	// 즉, 공격재개가능시간 = 몽타주재생시간 - 서버딜레이
+
+	MeleeAttackTimeDifference = GetWorld()->GetTimeSeconds() - InStartMeleeAttackTime;
+	// 서버딜레이 = 현재서버시간 - 공격입력이들어왔을때서버시간
+	MeleeAttackTimeDifference = FMath::Clamp(MeleeAttackTimeDifference, 0.f, MeleeAttackMontagePlayTime);
+	// 서버딜레이는 0초에서 밀리공격몽타주재생시간 사이로 제한. 0초보다 작다는건 말이 안되는 자명한 사실이고,
+	// 밀리공격몽타주재생시간 보다 크다는건, 그럴 수는 있으나 공식(공격재개가능시간 = 몽타주재생시간 - 서버딜레이)에 의해 우리가 할 수 있는 최선이 곧바로 실행하는 것. 미리 실행할 순 없음.
+
+	if (KINDA_SMALL_NUMBER < MeleeAttackMontagePlayTime - MeleeAttackTimeDifference)
+	{
+		// Calling SetTimer with a rate less than or equal to zero is identical to calling ClearTimer.
+		// 대충 0초로 타이머를 걸면, ClearTimer() 함수를 호출하는 것과 똑같다는 뜻.
+
+		bCanAttack = false;
+		OnRep_CanAttack();
+
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
+			{
+				bCanAttack = true;
+				OnRep_CanAttack();
+			}), MeleeAttackMontagePlayTime - MeleeAttackTimeDifference, false, -1.f);
+	}
+	// else
+	// {
+	//    이 경우는 서버딜레이가 너무 심해버려서, 서버딜레이 == 밀리공격애님몽타주재생시간인 경우.
+	//    우리가 할 수 있는건 bCanAttack을 그대로 둬서, 마치 아무일도 일어나지 않게끔함. 바로 공격할 수 있게함.
+	// }
+
+	LastStartMeleeAttackTime = InStartMeleeAttackTime;
+	PlayMeleeAttackMontage();
+
+	for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (IsValid(PlayerController) == true && GetController() != PlayerController)  // 이 캐릭터는 공격한 플레이어의 캐릭터임. 공격한 플레이어의 컨트롤러 외의 컨트롤러들을 찾기 위한 조건문.
+		{
+			ATaskCharacter* OtherPlayerCharacter = Cast<ATaskCharacter>(PlayerController->GetPawn());
+			if (OtherPlayerCharacter)
+			{
+				OtherPlayerCharacter->ClientRPCPlayMeleeAttackMontage(this); // 다른 플레이어 컨트롤러의 캐릭터에 공격한 클라이언트의 캐릭터를 넘겨줘서, 애니메이션이 재생되게끔 함.
+			}
+		}
+	}
+}
+
+bool ATaskCharacter::ServerRPCMeleeAttack_Validate(float InStartMeleeAttackTime)
+{
+	if (LastStartMeleeAttackTime == 0.0f)
+	{
+		// 최초 공격은 일단 통과.
+		return true;
+	}
+
+	return (MeleeAttackMontagePlayTime - 0.1f) < (InStartMeleeAttackTime - LastStartMeleeAttackTime);
+	// InStartMeleeAttackTime - LastStartMeleeAttackTime은 "이전 공격 기준으로 얼마나 더 빠르게 공격시도했는가"를 의미함.
+	// 이 시간이 너무나도 짧아서 밀리공격애님몽타주재생시간보다도 짧아버리면 문제가 됨. 그러니 ServerRPC 블락처리.
+}
+
+
+void ATaskCharacter::MulticastRPCMeleeAttack_Implementation()
+{
+	if (HasAuthority() == false && IsLocallyControlled() == false)
+	{
+		PlayMeleeAttackMontage();
+	}
+}
+
+void ATaskCharacter::OnRep_CanAttack()
+{
+	if (bCanAttack == true)
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	}
+	else
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_None);
+	}
+}
+
+void ATaskCharacter::PlayMeleeAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (IsValid(AnimInstance) == true)
+	{
+		AnimInstance->StopAllMontages(0.f);
+		AnimInstance->Montage_Play(MeleeAttackMontage);
+	}
+}
+
+void ATaskCharacter::ClientRPCPlayMeleeAttackMontage_Implementation(ATaskCharacter* InTargetCharacter)
+{
+	if (IsValid(InTargetCharacter) == true)
+	{
+		InTargetCharacter->PlayMeleeAttackMontage();
+	}
+}
+
+bool ATaskCharacter::ServerRPCPerformMeleeHit_Validate(ACharacter* InDamagedCharacters, float InCheckTime)
+{
+	return MinAllowedTimeForMeleeAttack < (InCheckTime - LastStartMeleeAttackTime);
+}
+
+void ATaskCharacter::ServerRPCPerformMeleeHit_Implementation(ACharacter* InDamagedCharacters, float InCheckTime)
+{
+	if (IsValid(InDamagedCharacters) == true)
+	{
+		const float MeleeAttackDamage = 10.f;
+		FDamageEvent DamageEvent;
+		InDamagedCharacters->TakeDamage(MeleeAttackDamage, DamageEvent, GetController(), this);
 	}
 }
 

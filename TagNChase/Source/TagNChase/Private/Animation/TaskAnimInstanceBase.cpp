@@ -32,3 +32,11 @@ void UTaskAnimInstanceBase::NativeUpdateAnimation(float DeltaSeconds)
 	bIsFalling = OwnerCharacterMovementComponent->IsFalling();
 	AimPitch = OwnerCharacter->GetCurrentAimPitch();
 }
+
+void UTaskAnimInstanceBase::AnimNotify_CheckMeleeAttackHit()
+{
+	if (IsValid(OwnerCharacter) == true)
+	{
+		OwnerCharacter->CheckMeleeAttackHit();
+	}
+}
