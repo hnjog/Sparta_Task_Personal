@@ -8,10 +8,11 @@
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Gimmick/TNLandMine.h"
+#include "Net/UnrealNetwork.h"
 
 ATaskCharacter::ATaskCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -62,6 +63,32 @@ void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	EIC->BindAction(LandMineAction, ETriggerEvent::Started, this, &ThisClass::HandleLandMineInput);
 }
 
+void ATaskCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, CurrentAimPitch);
+}
+
+void ATaskCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (IsValid(GetController()) == true)
+	{
+		PreviousAimPitch = CurrentAimPitch;
+
+		FRotator ControlRotation = GetController()->GetControlRotation();
+		float NormalizedPitch = FRotator::NormalizeAxis(ControlRotation.Pitch);
+		CurrentAimPitch = FMath::Clamp(NormalizedPitch, -90.0f, 90.0f);
+	}
+
+	if (IsLocallyControlled() == true && PreviousAimPitch != CurrentAimPitch)
+	{
+		ServerRPCUpdateAimValue(CurrentAimPitch);
+	}
+}
+
 void ATaskCharacter::HandleMoveInput(const FInputActionValue& InValue)
 {
 	if (IsValid(Controller) == false)
@@ -104,6 +131,10 @@ void ATaskCharacter::HandleLandMineInput(const FInputActionValue& InValue)
 	}
 }
 
+void ATaskCharacter::ServerRPCUpdateAimValue_Implementation(const float& InAimPitchValue)
+{
+	CurrentAimPitch = InAimPitchValue;
+}
 
 void ATaskCharacter::ServerRPCSpawnLandMine_Implementation()
 {

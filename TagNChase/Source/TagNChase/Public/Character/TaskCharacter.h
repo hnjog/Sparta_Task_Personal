@@ -24,6 +24,10 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void Tick(float DeltaTime) override;
 #pragma endregion
 
 #pragma region TaskPlayerCharacter Components
@@ -47,6 +51,12 @@ private:
 	void HandleLookInput(const FInputActionValue& InValue);
 
 	void HandleLandMineInput(const FInputActionValue& InValue);
+
+	UFUNCTION(Server, Unreliable)
+	void ServerRPCUpdateAimValue(const float& InAimPitchValue);
+public:
+	float GetCurrentAimPitch() const { return CurrentAimPitch; }
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
@@ -62,6 +72,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
 	TObjectPtr<UInputAction> LandMineAction;
+
+	UPROPERTY(Replicated)
+	float CurrentAimPitch = 0.f;
+
+	float PreviousAimPitch = 0.f;
 #pragma endregion
 
 #pragma region LandMine
