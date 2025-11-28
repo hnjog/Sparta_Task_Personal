@@ -28,10 +28,20 @@ public:
 	void SetMaxHP(float InMaxHP);
 
 public:
-	UPROPERTY()
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+protected:
+	UFUNCTION()
+	void OnRep_CurrentHP();
+
+	UFUNCTION()
+	void OnRep_MaxHP();
+
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentHP)
 	float CurrentHP;
 
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_MaxHP)
 	float MaxHP;
 
 	FOnCurrentHPChangedDelegate OnCurrentHPChanged;

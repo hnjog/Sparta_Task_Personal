@@ -2,6 +2,7 @@
 
 
 #include "Component/TNStatusComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UTNStatusComponent::UTNStatusComponent()
@@ -9,6 +10,8 @@ UTNStatusComponent::UTNStatusComponent()
 	, MaxHP(100.f)
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	SetIsReplicatedByDefault(true);
 }
 
 float UTNStatusComponent::ApplyDamage(float InDamage)
@@ -41,5 +44,23 @@ void UTNStatusComponent::SetMaxHP(float InMaxHP)
 		MaxHP = 0.1f;
 	}
 
+	OnMaxHPChanged.Broadcast(MaxHP);
+}
+
+void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, CurrentHP);
+	DOREPLIFETIME(ThisClass, MaxHP);
+}
+
+void UTNStatusComponent::OnRep_CurrentHP()
+{
+	OnCurrentHPChanged.Broadcast(CurrentHP);
+}
+
+void UTNStatusComponent::OnRep_MaxHP()
+{
 	OnMaxHPChanged.Broadcast(MaxHP);
 }

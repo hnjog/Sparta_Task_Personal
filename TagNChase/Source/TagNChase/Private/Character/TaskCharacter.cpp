@@ -14,6 +14,11 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/GameStateBase.h"
 #include "EngineUtils.h"
+#include "Component/TNHPTextWidgetComponent.h"
+#include "Component/TNStatusComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "UI/UW_HPText.h"
 
 ATaskCharacter::ATaskCharacter() 
 	: bCanAttack(true)
@@ -40,6 +45,16 @@ ATaskCharacter::ATaskCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->bUsePawnControlRotation = false;
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+
+	StatusComponent = CreateDefaultSubobject<UTNStatusComponent>(TEXT("StatusComponent"));
+
+	HPTextWidgetComponent = CreateDefaultSubobject<UTNHPTextWidgetComponent>(TEXT("HPTextWidgetComponent"));
+	HPTextWidgetComponent->SetupAttachment(GetRootComponent());
+	HPTextWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	// HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		// Billboard 방식으로 보이나, 주인공 캐릭터를 가리게됨. 또한 UI와 멀어져도 동일한 크기가 유지되는 문제도 있음.
+	HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
+	HPTextWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ATaskCharacter::BeginPlay()
@@ -103,6 +118,13 @@ void ATaskCharacter::Tick(float DeltaTime)
 	{
 		ServerRPCUpdateAimValue(CurrentAimPitch);
 	}
+	
+	if (IsValid(HPTextWidgetComponent) == true && HasAuthority() == false)
+	{
+		FVector WidgetComponentLocation = HPTextWidgetComponent->GetComponentLocation();
+		FVector LocalPlayerCameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+		HPTextWidgetComponent->SetWorldRotation(UKismetMathLibrary::FindLookAtRotation(WidgetComponentLocation, LocalPlayerCameraLocation));
+	}
 }
 
 void ATaskCharacter::HandleMoveInput(const FInputActionValue& InValue)
@@ -165,7 +187,9 @@ float ATaskCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 {
 	UKismetSystemLibrary::PrintString(GetWorld(), FString::Printf(TEXT("TakeDamage: %f"), DamageAmount), true, true, FLinearColor::Red, 5.f);
 
-	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	StatusComponent->ApplyDamage(ActualDamage);
+	return ActualDamage;
 }
 
 void ATaskCharacter::CheckMeleeAttackHit()
@@ -307,6 +331,17 @@ void ATaskCharacter::PlayMeleeAttackMontage()
 	{
 		AnimInstance->StopAllMontages(0.f);
 		AnimInstance->Montage_Play(MeleeAttackMontage);
+	}
+}
+
+void ATaskCharacter::SetHPTextWidget(UUW_HPText* InHPTextWidget)
+{
+	UUW_HPText* HPWidget = Cast<UUW_HPText>(InHPTextWidget);
+	if (IsValid(HPWidget) == true)
+	{
+		HPWidget->InitializeHPTextWidget(StatusComponent);
+		StatusComponent->OnCurrentHPChanged.AddUObject(HPWidget, &UUW_HPText::OnCurrentHPChange);
+		StatusComponent->OnMaxHPChanged.AddUObject(HPWidget, &UUW_HPText::OnMaxHPChange);
 	}
 }
 

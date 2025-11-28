@@ -5,6 +5,7 @@
 
 #include "Component/TNStatusComponent.h"
 #include "Components/TextBlock.h"
+#include "Character/TaskCharacter.h"
 
 UUW_HPText::UUW_HPText(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,6 +15,12 @@ UUW_HPText::UUW_HPText(const FObjectInitializer& ObjectInitializer)
 void UUW_HPText::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	ATaskCharacter* OwningCharacter = Cast<ATaskCharacter>(OwningActor);
+	if (IsValid(OwningCharacter) == true)
+	{
+		OwningCharacter->SetHPTextWidget(this);
+	}
 }
 
 void UUW_HPText::InitializeHPTextWidget(UTNStatusComponent* InStatusComponent)
