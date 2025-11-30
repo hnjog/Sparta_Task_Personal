@@ -17,6 +17,11 @@ UTNStatusComponent::UTNStatusComponent()
 
 float UTNStatusComponent::ApplyDamage(float InDamage)
 {
+	if (IsValid(GetOwner()) == false || GetOwner()->HasAuthority() == false)
+	{
+		return 0.f;
+	}
+
 	const float PreviousHP = CurrentHP;
 	const float ActualDamage = FMath::Clamp<float>(InDamage, 0, PreviousHP);
 
@@ -27,6 +32,11 @@ float UTNStatusComponent::ApplyDamage(float InDamage)
 
 void UTNStatusComponent::SetCurrentHP(float InCurrentHP)
 {
+	if (IsValid(GetOwner()) == false || GetOwner()->HasAuthority() == false)
+	{
+		return;
+	}
+
 	CurrentHP = InCurrentHP;
 	if (CurrentHP <= KINDA_SMALL_NUMBER)
 	{
@@ -38,6 +48,11 @@ void UTNStatusComponent::SetCurrentHP(float InCurrentHP)
 
 void UTNStatusComponent::SetMaxHP(float InMaxHP)
 {
+	if (IsValid(GetOwner()) == false || GetOwner()->HasAuthority() == false)
+	{
+		return;
+	}
+
 	MaxHP = InMaxHP;
 
 	if (MaxHP < KINDA_SMALL_NUMBER)
@@ -53,7 +68,7 @@ void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, CurrentHP);
-	DOREPLIFETIME(ThisClass, MaxHP);
+	DOREPLIFETIME_CONDITION(ThisClass, MaxHP, COND_OwnerOnly);
 }
 
 void UTNStatusComponent::OnRep_CurrentHP()

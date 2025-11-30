@@ -113,6 +113,9 @@ public:
 
 	void CheckMeleeAttackHit();
 
+	UFUNCTION()
+	void OnDeath();
+
 private:
 	void DrawDebugMeleeAttack(const FColor& DrawColor, FVector TraceStart, FVector TraceEnd, FVector Forward);
 	
@@ -154,5 +157,6 @@ protected:
 public:
 	void SetHPTextWidget(UUW_HPText* InHPTextWidget);
 
+	void TakeBuff(float InBuffValue);
 #pragma endregion
 };

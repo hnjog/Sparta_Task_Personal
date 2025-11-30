@@ -19,6 +19,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UI/UW_HPText.h"
+#include "Controller/TaskPlayerController.h"
+#include "GameMode/TaskGameModeBase.h"
+#include "GameState/TaskGameStateBase.h"
 
 ATaskCharacter::ATaskCharacter() 
 	: bCanAttack(true)
@@ -75,6 +78,8 @@ void ATaskCharacter::BeginPlay()
 	{
 		MeleeAttackMontagePlayTime = MeleeAttackMontage->GetPlayLength();
 	}
+
+	StatusComponent->OnOutOfCurrentHP.AddUObject(this, &ThisClass::OnDeath);
 }
 
 void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -188,7 +193,11 @@ float ATaskCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 	UKismetSystemLibrary::PrintString(GetWorld(), FString::Printf(TEXT("TakeDamage: %f"), DamageAmount), true, true, FLinearColor::Red, 5.f);
 
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	StatusComponent->ApplyDamage(ActualDamage);
+	ATaskGameStateBase* GameState = Cast<ATaskGameStateBase>(UGameplayStatics::GetGameState(this));
+	if (IsValid(GameState) == true && GameState->MatchState == EMatchState::Playing)
+	{
+		StatusComponent->ApplyDamage(ActualDamage);
+	}
 	return ActualDamage;
 }
 
@@ -227,6 +236,15 @@ void ATaskCharacter::CheckMeleeAttackHit()
 
 		FColor DrawColor = bIsHitDetected ? FColor::Green : FColor::Red;
 		DrawDebugMeleeAttack(DrawColor, Start, End, Forward);
+	}
+}
+
+void ATaskCharacter::OnDeath()
+{
+	ATaskPlayerController* PlayerController = GetController<ATaskPlayerController>();
+	if (IsValid(PlayerController) == true && HasAuthority() == true)
+	{
+		PlayerController->OnCharacterDead();
 	}
 }
 
@@ -342,6 +360,15 @@ void ATaskCharacter::SetHPTextWidget(UUW_HPText* InHPTextWidget)
 		HPWidget->InitializeHPTextWidget(StatusComponent);
 		StatusComponent->OnCurrentHPChanged.AddUObject(HPWidget, &UUW_HPText::OnCurrentHPChange);
 		StatusComponent->OnMaxHPChanged.AddUObject(HPWidget, &UUW_HPText::OnMaxHPChange);
+	}
+}
+
+void ATaskCharacter::TakeBuff(float InBuffValue)
+{
+	if (IsValid(StatusComponent) == true)
+	{
+		StatusComponent->SetMaxHP(StatusComponent->GetMaxHP() + InBuffValue);
+		StatusComponent->SetCurrentHP(StatusComponent->GetCurrentHP() + InBuffValue);
 	}
 }
 

@@ -3,3 +3,172 @@
 
 #include "GameMode/TaskGameModeBase.h"
 
+#include "Controller/TaskPlayerController.h"
+#include "GameState/TaskGameStateBase.h"
+#include "Kismet/GameplayStatics.h"
+
+void ATaskGameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	ATaskGameStateBase* TaskGameState = GetGameState<ATaskGameStateBase>();
+	if (IsValid(TaskGameState) == false)
+	{
+		return;
+	}
+
+	if (TaskGameState->MatchState != EMatchState::Waiting)
+	{
+		NewPlayer->SetLifeSpan(0.1f);
+		return;
+	}
+
+	ATaskPlayerController* NewPlayerController = Cast<ATaskPlayerController>(NewPlayer);
+	if (IsValid(NewPlayerController) == true)
+	{
+		AlivePlayerControllers.Add(NewPlayerController);
+		NewPlayerController->NotificationText = FText::FromString(TEXT("Connected to the game server."));
+	}
+
+}
+
+void ATaskGameModeBase::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	ATaskPlayerController* ExitingPlayerController = Cast<ATaskPlayerController>(Exiting);
+	if (IsValid(ExitingPlayerController) == true && AlivePlayerControllers.Find(ExitingPlayerController) != INDEX_NONE)
+	{
+		AlivePlayerControllers.Remove(ExitingPlayerController);
+		DeadPlayerControllers.Add(ExitingPlayerController);
+	}
+}
+
+void ATaskGameModeBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetWorld()->GetTimerManager().SetTimer(MainTimerHandle, this, &ThisClass::OnMainTimerElapsed, 1.f, true);
+	RemainWaitingTimeForPlaying = WaitingTime;
+	RemainWaitingTimeForEnding = EndingTime;
+}
+
+void ATaskGameModeBase::OnCharacterDead(ATaskPlayerController* InController)
+{
+	if (IsValid(InController) == false || AlivePlayerControllers.Find(InController) == INDEX_NONE)
+	{
+		return;
+	}
+
+	InController->ClientRPCShowGameResultWidget(AlivePlayerControllers.Num());
+	AlivePlayerControllers.Remove(InController);
+	DeadPlayerControllers.Add(InController);
+}
+
+void ATaskGameModeBase::OnMainTimerElapsed()
+{
+	ATaskGameStateBase* TaskGameState = GetGameState<ATaskGameStateBase>();
+	if (IsValid(TaskGameState) == false)
+	{
+		return;
+	}
+
+	switch (TaskGameState->MatchState)
+	{
+	case EMatchState::None:
+		break;
+	case EMatchState::Waiting:
+	{
+		FString NotificationString = FString::Printf(TEXT(""));
+
+		if (AlivePlayerControllers.Num() < MinimumPlayerCountForPlaying)
+		{
+			NotificationString = FString::Printf(TEXT("Wait another players for playing."));
+
+			RemainWaitingTimeForPlaying = WaitingTime; // 최소인원이 안된다면 대기 시간 초기화.
+		}
+		else
+		{
+			NotificationString = FString::Printf(TEXT("Wait %d seconds for playing."), RemainWaitingTimeForPlaying);
+
+			--RemainWaitingTimeForPlaying;
+		}
+
+		if (RemainWaitingTimeForPlaying <= 0)
+		{
+			NotificationString = FString::Printf(TEXT(""));
+
+			TaskGameState->MatchState = EMatchState::Playing;
+		}
+
+		NotifyToAllPlayer(NotificationString);
+
+		break;
+	}
+	case EMatchState::Playing:
+	{
+		TaskGameState->AlivePlayerControllerCount = AlivePlayerControllers.Num();
+
+		FString NotificationString = FString::Printf(TEXT("%d / %d"), TaskGameState->AlivePlayerControllerCount, TaskGameState->AlivePlayerControllerCount + DeadPlayerControllers.Num());
+
+		NotifyToAllPlayer(NotificationString);
+
+		if (TaskGameState->AlivePlayerControllerCount <= 1)
+		{
+			TaskGameState->MatchState = EMatchState::Ending;
+			AlivePlayerControllers[0]->ClientRPCShowGameResultWidget(1);
+		}
+	}
+	break;
+	case EMatchState::Ending:
+	{
+		FString NotificationString = FString::Printf(TEXT("Waiting %d for returning to title."), RemainWaitingTimeForEnding);
+
+		NotifyToAllPlayer(NotificationString);
+
+		--RemainWaitingTimeForEnding;
+
+		if (RemainWaitingTimeForEnding <= 0)
+		{
+			for (auto AliveController : AlivePlayerControllers)
+			{
+				AliveController->ClientRPCReturnToTitle();
+			}
+			for (auto DeadController : DeadPlayerControllers)
+			{
+				DeadController->ClientRPCReturnToTitle();
+			}
+
+			MainTimerHandle.Invalidate();
+			FName CurrentLevelName = FName(UGameplayStatics::GetCurrentLevelName(this));
+			UGameplayStatics::OpenLevel(this, CurrentLevelName, true, FString(TEXT("listen")));
+
+			return;
+		}
+	}
+	break;
+	case EMatchState::End:
+		break;
+	default:
+		break;
+
+	}
+}
+
+void ATaskGameModeBase::NotifyToAllPlayer(const FString& NotificationString)
+{
+	for (auto AlivePlayerController : AlivePlayerControllers)
+	{
+		AlivePlayerController->NotificationText = FText::FromString(NotificationString);
+	}
+
+	for (auto DeadPlayerController : DeadPlayerControllers)
+	{
+		DeadPlayerController->NotificationText = FText::FromString(NotificationString);
+	}
+}
+
+void ATaskGameModeBase::InitMatch()
+{
+
+}
