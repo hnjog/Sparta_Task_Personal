@@ -37,8 +37,11 @@ private:
 
 	void AssignRoleToController(ATaskPlayerController* PC, ERoleType NewRole);
 
+	void MatchTimeOut();
+
 public:
 	FTimerHandle MainTimerHandle;
+	FTimerHandle MatchTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 WaitingTime = 15;
@@ -58,4 +61,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<TObjectPtr<ATaskPlayerController>> DeadPlayerControllers;
+
+	int32 PoliceIndex;
 };
