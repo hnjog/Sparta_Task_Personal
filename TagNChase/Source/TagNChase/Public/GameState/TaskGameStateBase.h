@@ -27,9 +27,18 @@ class TAGNCHASE_API ATaskGameStateBase : public AGameStateBase
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void StartTime() { TimeLimit = BaseMatchTime; }
+	void TimeRun() { TimeLimit--; }
+	bool IsTimeOut() { return TimeLimit <= 0; }
+
 public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	int32 AlivePlayerControllerCount = 0;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
+	int32 TimeLimit = 0;
+
+	int32 BaseMatchTime = 60;
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	EMatchState MatchState = EMatchState::Waiting;
