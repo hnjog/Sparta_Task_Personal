@@ -167,7 +167,8 @@ void ATaskCharacter::HandleLookInput(const FInputActionValue& InValue)
 void ATaskCharacter::HandleMeleeAttackInput(const FInputActionValue& InValue)
 {
 	if (true == bCanAttack &&
-		GetCharacterMovement()->IsFalling() == false)
+		GetCharacterMovement()->IsFalling() == false &&
+		StatusComponent->GetRole() == ERoleType::Police) // 경찰일 때만 공격 가능하도록
 	{
 		ServerRPCMeleeAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 
