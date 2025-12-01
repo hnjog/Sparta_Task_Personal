@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Component/TNStatusComponent.h"
 #include "TaskGameModeBase.generated.h"
 
 class ATaskPlayerController;
@@ -33,6 +34,8 @@ private:
 	void NotifyToAllPlayer(const FString& NotificationString);
 
 	void InitMatch();
+
+	void AssignRoleToController(ATaskPlayerController* PC, ERoleType NewRole);
 
 public:
 	FTimerHandle MainTimerHandle;

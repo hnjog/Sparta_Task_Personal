@@ -6,6 +6,7 @@
 #include "Controller/TaskPlayerController.h"
 #include "GameState/TaskGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "TagNChase.h"
 
 void ATaskGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
@@ -99,6 +100,8 @@ void ATaskGameModeBase::OnMainTimerElapsed()
 			NotificationString = FString::Printf(TEXT(""));
 
 			TaskGameState->MatchState = EMatchState::Playing;
+
+			InitMatch();
 		}
 
 		NotifyToAllPlayer(NotificationString);
@@ -170,5 +173,43 @@ void ATaskGameModeBase::NotifyToAllPlayer(const FString& NotificationString)
 
 void ATaskGameModeBase::InitMatch()
 {
+	AlivePlayerControllers.RemoveAll([](ATaskPlayerController* PC)
+		{
+			return PC == nullptr;
+		});
 
+	if (AlivePlayerControllers.Num() != 2)
+	{
+		TN_LOG_NET(LogTNNet, Warning, TEXT("InitMatch: Player count is not 2 (Current: %d)"), AlivePlayerControllers.Num());
+		return;
+	}
+
+	const int32 PoliceIndex = FMath::RandRange(0, 1);
+	const int32 ThiefIndex = 1 - PoliceIndex;
+
+	ATaskPlayerController* PolicePC = AlivePlayerControllers[PoliceIndex];
+	ATaskPlayerController* ThiefPC = AlivePlayerControllers[ThiefIndex];
+
+	AssignRoleToController(PolicePC, ERoleType::Police);
+	AssignRoleToController(ThiefPC, ERoleType::Thief);
+
+	TN_LOG_NET(LogTNNet, Log, TEXT("InitMatch: Police = %s, Thief = %s"),
+		*GetNameSafe(PolicePC),
+		*GetNameSafe(ThiefPC));
+}
+
+void ATaskGameModeBase::AssignRoleToController(ATaskPlayerController* PC, ERoleType NewRole)
+{
+	if (PC == nullptr)
+	{
+		return;
+	}
+
+	if (APawn* Pawn = PC->GetPawn())
+	{
+		if (UTNStatusComponent* Status = Pawn->FindComponentByClass<UTNStatusComponent>())
+		{
+			Status->SetRole(NewRole);
+		}
+	}
 }
