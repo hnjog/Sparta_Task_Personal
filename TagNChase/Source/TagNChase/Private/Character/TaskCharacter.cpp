@@ -14,7 +14,6 @@
 #include "GameFramework/GameStateBase.h"
 #include "EngineUtils.h"
 #include "Component/TNHPTextWidgetComponent.h"
-#include "Component/TNStatusComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UI/UW_HPText.h"
@@ -47,8 +46,6 @@ ATaskCharacter::ATaskCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->bUsePawnControlRotation = false;
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
-
-	StatusComponent = CreateDefaultSubobject<UTNStatusComponent>(TEXT("StatusComponent"));
 
 	HPTextWidgetComponent = CreateDefaultSubobject<UTNHPTextWidgetComponent>(TEXT("HPTextWidgetComponent"));
 	HPTextWidgetComponent->SetupAttachment(GetRootComponent());
@@ -177,19 +174,6 @@ void ATaskCharacter::HandleMeleeAttackInput(const FInputActionValue& InValue)
 			PlayMeleeAttackMontage();
 		}
 	}
-}
-
-float ATaskCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	UKismetSystemLibrary::PrintString(GetWorld(), FString::Printf(TEXT("TakeDamage: %f"), DamageAmount), true, true, FLinearColor::Red, 5.f);
-
-	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	ATaskGameStateBase* GameState = Cast<ATaskGameStateBase>(UGameplayStatics::GetGameState(this));
-	if (IsValid(GameState) == true && GameState->MatchState == EMatchState::Playing)
-	{
-		StatusComponent->ApplyDamage(ActualDamage);
-	}
-	return ActualDamage;
 }
 
 void ATaskCharacter::CheckMeleeAttackHit()
