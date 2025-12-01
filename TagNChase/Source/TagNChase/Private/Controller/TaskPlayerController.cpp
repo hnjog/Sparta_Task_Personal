@@ -88,7 +88,7 @@ void ATaskPlayerController::ClientRPCShowGameResultWidget_Implementation(int32 I
 				UTNStatusComponent* StatusComp = GetStatusComponent();
 				if (IsValid(StatusComp))
 				{
-					RankingString += FString::Printf(TEXT(" : %s"), StatusComp->GetRole() == ERoleType::Police ? TEXT("Police") : TEXT("Thief ));
+					RankingString += FString::Printf(TEXT(" : %s"), StatusComp->GetRole() == ERoleType::Police ? TEXT("Police") : TEXT("Thief "));
 				}
 
 				GameResultUI->RankingText->SetText(FText::FromString(RankingString));

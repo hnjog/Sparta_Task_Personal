@@ -61,8 +61,6 @@ private:
 
 	void HandleLookInput(const FInputActionValue& InValue);
 
-	void HandleLandMineInput(const FInputActionValue& InValue);
-
 	void HandleMeleeAttackInput(const FInputActionValue& InValue);
 
 	UFUNCTION(Server, Unreliable)
@@ -84,27 +82,12 @@ protected:
 	TObjectPtr<UInputAction> JumpAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
-	TObjectPtr<UInputAction> LandMineAction;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Input")
 	TObjectPtr<UInputAction> MeleeAttackAction;
 
 	UPROPERTY(Replicated)
 	float CurrentAimPitch = 0.f;
 
 	float PreviousAimPitch = 0.f;
-#pragma endregion
-
-#pragma region LandMine
-
-private:
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPCSpawnLandMine();
-
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<AActor> LandMineClass;
-
 #pragma endregion
 
 #pragma region Attack
