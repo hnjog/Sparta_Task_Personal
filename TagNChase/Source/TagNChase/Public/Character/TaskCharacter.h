@@ -40,6 +40,7 @@ public:
 
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
 
+	FORCEINLINE UTNStatusComponent* GetStatus() const { return StatusComponent; }
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
 	TObjectPtr<USpringArmComponent> SpringArm;
