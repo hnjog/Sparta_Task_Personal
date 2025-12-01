@@ -11,4 +11,5 @@ void ATaskGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME(ThisClass, AlivePlayerControllerCount);
 	DOREPLIFETIME(ThisClass, MatchState);
+	DOREPLIFETIME(ThisClass, TimeLimit);
 }

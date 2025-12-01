@@ -6,6 +6,7 @@
 #include "Controller/TaskPlayerController.h"
 #include "GameState/TaskGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "TagNChase.h"
 
 void ATaskGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
@@ -99,6 +100,9 @@ void ATaskGameModeBase::OnMainTimerElapsed()
 			NotificationString = FString::Printf(TEXT(""));
 
 			TaskGameState->MatchState = EMatchState::Playing;
+			TaskGameState->StartTime();
+
+			InitMatch();
 		}
 
 		NotifyToAllPlayer(NotificationString);
@@ -140,6 +144,8 @@ void ATaskGameModeBase::OnMainTimerElapsed()
 			}
 
 			MainTimerHandle.Invalidate();
+			GetWorldTimerManager().ClearTimer(MatchTimerHandle);
+			MatchTimerHandle.Invalidate();
 			FName CurrentLevelName = FName(UGameplayStatics::GetCurrentLevelName(this));
 			UGameplayStatics::OpenLevel(this, CurrentLevelName, true, FString(TEXT("listen")));
 
@@ -170,5 +176,89 @@ void ATaskGameModeBase::NotifyToAllPlayer(const FString& NotificationString)
 
 void ATaskGameModeBase::InitMatch()
 {
+	AlivePlayerControllers.RemoveAll([](ATaskPlayerController* PC)
+		{
+			return PC == nullptr;
+		});
 
+	if (AlivePlayerControllers.Num() != 2)
+	{
+		TN_LOG_NET(LogTNNet, Warning, TEXT("InitMatch: Player count is not 2 (Current: %d)"), AlivePlayerControllers.Num());
+		return;
+	}
+
+	PoliceIndex = FMath::RandRange(0, 1);
+	const int32 ThiefIndex = 1 - PoliceIndex;
+
+	ATaskPlayerController* PolicePC = AlivePlayerControllers[PoliceIndex];
+	ATaskPlayerController* ThiefPC = AlivePlayerControllers[ThiefIndex];
+
+	AssignRoleToController(PolicePC, ERoleType::Police);
+	AssignRoleToController(ThiefPC, ERoleType::Thief);
+
+	TN_LOG_NET(LogTNNet, Log, TEXT("InitMatch: Police = %s, Thief = %s"),
+		*GetNameSafe(PolicePC),
+		*GetNameSafe(ThiefPC));
+
+	GetWorldTimerManager().SetTimer(
+		MatchTimerHandle,
+		FTimerDelegate::CreateLambda([this]()
+			{
+				if (!IsValid(this))
+					return;
+
+				ATaskGameStateBase* TGS = GetGameState<ATaskGameStateBase>();
+
+				if (!IsValid(TGS) ||
+					TGS->MatchState != EMatchState::Playing)
+				{
+					GetWorldTimerManager().ClearTimer(MatchTimerHandle);
+					return;
+				}
+
+				TGS->TimeRun();
+
+				TN_LOG_NET(LogTNNet, Log, TEXT("Match Time : %d"), TGS->GetMatchTime());
+				if (TGS->IsTimeOut())
+				{
+					MatchTimeOut();
+					GetWorldTimerManager().ClearTimer(MatchTimerHandle);
+				}
+			}),
+		1.f,
+		true
+	);
+}
+
+
+void ATaskGameModeBase::AssignRoleToController(ATaskPlayerController* PC, ERoleType NewRole)
+{
+	if (PC == nullptr)
+	{
+		return;
+	}
+
+	if (APawn* Pawn = PC->GetPawn())
+	{
+		if (UTNStatusComponent* Status = Pawn->FindComponentByClass<UTNStatusComponent>())
+		{
+			Status->SetRole(NewRole);
+		}
+	}
+}
+
+void ATaskGameModeBase::MatchTimeOut()
+{
+	// 지금은 PoliceIndex 를 저장하지만, 나중에는 플레이어 컨트롤러로 체크하는게 더 좋을듯
+	if (PoliceIndex >= AlivePlayerControllers.Num())
+	{
+		return;
+	}
+
+	if (IsValid(AlivePlayerControllers[PoliceIndex]) == false)
+	{
+		return;
+	}
+
+	AlivePlayerControllers[PoliceIndex]->OnCharacterDead();
 }

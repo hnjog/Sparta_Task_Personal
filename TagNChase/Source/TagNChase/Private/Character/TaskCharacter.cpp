@@ -7,7 +7,6 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
-#include "Gimmick/TNLandMine.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
@@ -94,7 +93,6 @@ void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping); 
-	EIC->BindAction(LandMineAction, ETriggerEvent::Started, this, &ThisClass::HandleLandMineInput);
 	EIC->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ThisClass::HandleMeleeAttackInput);
 }
 
@@ -166,18 +164,11 @@ void ATaskCharacter::HandleLookInput(const FInputActionValue& InValue)
 	AddControllerPitchInput(InLookVector.Y);
 }
 
-void ATaskCharacter::HandleLandMineInput(const FInputActionValue& InValue)
-{
-	if (IsLocallyControlled() == true)
-	{
-		ServerRPCSpawnLandMine();
-	}
-}
-
 void ATaskCharacter::HandleMeleeAttackInput(const FInputActionValue& InValue)
 {
 	if (true == bCanAttack &&
-		GetCharacterMovement()->IsFalling() == false)
+		GetCharacterMovement()->IsFalling() == false &&
+		StatusComponent->GetRole() == ERoleType::Police) // 경찰일 때만 공격 가능하도록
 	{
 		ServerRPCMeleeAttack(GetWorld()->GetGameState()->GetServerWorldTimeSeconds());
 
@@ -398,19 +389,4 @@ void ATaskCharacter::ServerRPCPerformMeleeHit_Implementation(ACharacter* InDamag
 void ATaskCharacter::ServerRPCUpdateAimValue_Implementation(const float& InAimPitchValue)
 {
 	CurrentAimPitch = InAimPitchValue;
-}
-
-void ATaskCharacter::ServerRPCSpawnLandMine_Implementation()
-{
-	if (IsValid(LandMineClass) == true)
-	{
-		FVector SpawnedLocation = (GetActorLocation() + GetActorForwardVector() * 300.f) - FVector(0.f, 0.f, 90.f);
-		ATNLandMine* SpawnedLandMine = GetWorld()->SpawnActor<ATNLandMine>(LandMineClass, SpawnedLocation, FRotator::ZeroRotator);
-		SpawnedLandMine->SetOwner(this);
-	}
-}
-
-bool ATaskCharacter::ServerRPCSpawnLandMine_Validate()
-{
-	return true;
 }

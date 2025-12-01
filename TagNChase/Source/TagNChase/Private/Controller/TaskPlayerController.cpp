@@ -8,6 +8,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/UW_GameResult.h"
 #include "Components/TextBlock.h"
+#include "Component/TNStatusComponent.h"
+#include "Character/TaskCharacter.h"
 
 void ATaskPlayerController::BeginPlay()
 {
@@ -49,6 +51,15 @@ void ATaskPlayerController::OnCharacterDead()
 	}
 }
 
+UTNStatusComponent* ATaskPlayerController::GetStatusComponent() const
+{
+	ATaskCharacter* TC = Cast<ATaskCharacter>(GetPawn());
+	if (IsValid(TC) == false)
+		return nullptr;
+
+	return TC->GetStatus();
+}
+
 void ATaskPlayerController::ClientRPCReturnToTitle_Implementation()
 {
 	if (IsLocalController() == true)
@@ -69,10 +80,17 @@ void ATaskPlayerController::ClientRPCShowGameResultWidget_Implementation(int32 I
 			{
 				GameResultUI->AddToViewport(3);
 
-				FString GameResultString = FString::Printf(TEXT("%s"), InRanking == 1 ? TEXT("Winner Winner!") : TEXT("Looser..."));
+				FString GameResultString = FString::Printf(TEXT("%s"), InRanking == 1 ? TEXT("Winner Winner!") : TEXT("Loose..."));
 				GameResultUI->ResultText->SetText(FText::FromString(GameResultString));
 
 				FString RankingString = FString::Printf(TEXT("#%02d"), InRanking);
+
+				UTNStatusComponent* StatusComp = GetStatusComponent();
+				if (IsValid(StatusComp))
+				{
+					RankingString += FString::Printf(TEXT(" : %s"), StatusComp->GetRole() == ERoleType::Police ? TEXT("Police") : TEXT("Thief "));
+				}
+
 				GameResultUI->RankingText->SetText(FText::FromString(RankingString));
 
 				FInputModeUIOnly Mode;

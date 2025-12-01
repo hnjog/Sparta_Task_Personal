@@ -8,6 +8,7 @@
 
 class UUserWidget;
 class UUW_GameResult;
+class UTNStatusComponent;
 
 /**
  * 
@@ -31,6 +32,10 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPCReturnToTitle();
+
+private:
+	UTNStatusComponent* GetStatusComponent() const;
+
 public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	FText NotificationText;

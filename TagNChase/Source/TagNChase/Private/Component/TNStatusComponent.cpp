@@ -7,8 +7,8 @@
 
 // Sets default values for this component's properties
 UTNStatusComponent::UTNStatusComponent()
-	: CurrentHP(100.f)
-	, MaxHP(100.f)
+	: CurrentHP(5.f)
+	, MaxHP(5.f)
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
@@ -63,11 +63,22 @@ void UTNStatusComponent::SetMaxHP(float InMaxHP)
 	OnMaxHPChanged.Broadcast(MaxHP);
 }
 
+void UTNStatusComponent::SetRole(ERoleType InRole)
+{
+	if (IsValid(GetOwner()) == false || GetOwner()->HasAuthority() == false)
+	{
+		return;
+	}
+
+	Role = InRole;
+}
+
 void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, CurrentHP);
+	DOREPLIFETIME(ThisClass, Role);
 	DOREPLIFETIME_CONDITION(ThisClass, MaxHP, COND_OwnerOnly);
 }
 

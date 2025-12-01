@@ -6,6 +6,15 @@
 #include "Components/ActorComponent.h"
 #include "TNStatusComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class ERoleType : uint8
+{
+	None,
+	Police,
+	Thief,
+	Civilian,
+};
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentHPChangedDelegate, float /*InCurrentHP*/);
 DECLARE_MULTICAST_DELEGATE(FOnOutOfCurrentHPDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMaxHPChangedDelegate, float /*InMaxHP*/);
@@ -27,6 +36,9 @@ public:
 	float GetMaxHP() const { return MaxHP; }
 	void SetMaxHP(float InMaxHP);
 
+	ERoleType GetRole() const { return Role; }
+	void SetRole(ERoleType InRole);
+
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -38,15 +50,20 @@ protected:
 	void OnRep_MaxHP();
 
 public:
+	FOnCurrentHPChangedDelegate OnCurrentHPChanged;
+
+	FOnOutOfCurrentHPDelegate OnOutOfCurrentHP;
+
+	FOnMaxHPChangedDelegate OnMaxHPChanged;
+
+protected:
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHP)
 	float CurrentHP;
 
 	UPROPERTY(ReplicatedUsing = OnRep_MaxHP)
 	float MaxHP;
 
-	FOnCurrentHPChangedDelegate OnCurrentHPChanged;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Replicated)
+	ERoleType Role;
 
-	FOnOutOfCurrentHPDelegate OnOutOfCurrentHP;
-
-	FOnMaxHPChangedDelegate OnMaxHPChanged;
 };
