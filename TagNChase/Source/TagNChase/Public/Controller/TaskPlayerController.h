@@ -24,7 +24,6 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
-
 	void OnCharacterDead();
 
 	UFUNCTION(Client, Reliable)
@@ -32,6 +31,8 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void ClientRPCReturnToTitle();
+
+	void PaneltyToPolice();
 
 private:
 	UTNStatusComponent* GetStatusComponent() const;

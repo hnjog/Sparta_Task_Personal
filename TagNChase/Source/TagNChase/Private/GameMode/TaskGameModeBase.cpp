@@ -66,6 +66,21 @@ void ATaskGameModeBase::OnCharacterDead(ATaskPlayerController* InController)
 	DeadPlayerControllers.Add(InController);
 }
 
+void ATaskGameModeBase::PaneltyPolice()
+{
+	if (PoliceIndex >= AlivePlayerControllers.Num())
+	{
+		return;
+	}
+
+	if (IsValid(AlivePlayerControllers[PoliceIndex]) == false)
+	{
+		return;
+	}
+
+	AlivePlayerControllers[PoliceIndex]->PaneltyToPolice();
+}
+
 void ATaskGameModeBase::OnMainTimerElapsed()
 {
 	ATaskGameStateBase* TaskGameState = GetGameState<ATaskGameStateBase>();

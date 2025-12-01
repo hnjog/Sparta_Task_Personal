@@ -14,7 +14,6 @@ class TAGNCHASE_API AAICharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
 	
-	
-	
-	
+public:
+	virtual void OnDeath() override;
 };

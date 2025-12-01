@@ -10,6 +10,8 @@
 #include "Components/TextBlock.h"
 #include "Component/TNStatusComponent.h"
 #include "Character/TaskCharacter.h"
+#include "Engine/DamageEvents.h"
+#include "TagNChase.h"
 
 void ATaskPlayerController::BeginPlay()
 {
@@ -49,6 +51,23 @@ void ATaskPlayerController::OnCharacterDead()
 	{
 		GameMode->OnCharacterDead(this);
 	}
+}
+
+void ATaskPlayerController::PaneltyToPolice()
+{
+	ATaskCharacter* TC = Cast<ATaskCharacter>(GetPawn());
+	if (IsValid(TC) == false)
+		return;
+
+	UTNStatusComponent* StatusComp = GetStatusComponent();
+	if (IsValid(StatusComp) == false ||
+		StatusComp->GetRole() != ERoleType::Police)
+		return;
+
+	const float PeneltyDamage = 1.f;
+	FDamageEvent DamageEvent;
+	TC->TakeDamage(PeneltyDamage, DamageEvent, this, TC);
+	TN_LOG_NET(LogTNNet, Log, TEXT("PaneltyToPolice: Remain Police HP : %f"),StatusComp->GetCurrentHP());
 }
 
 UTNStatusComponent* ATaskPlayerController::GetStatusComponent() const
