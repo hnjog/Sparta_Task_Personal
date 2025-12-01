@@ -14,6 +14,7 @@ public class TagNChase : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput" ,
+			"UMG",
 		});
 
         PublicIncludePaths.AddRange(new string[]
