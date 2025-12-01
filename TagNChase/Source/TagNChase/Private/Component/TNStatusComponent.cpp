@@ -78,8 +78,8 @@ void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, CurrentHP);
+	DOREPLIFETIME(ThisClass, Role);
 	DOREPLIFETIME_CONDITION(ThisClass, MaxHP, COND_OwnerOnly);
-	DOREPLIFETIME_CONDITION(ThisClass, Role, COND_InitialOnly);
 }
 
 void UTNStatusComponent::OnRep_CurrentHP()
