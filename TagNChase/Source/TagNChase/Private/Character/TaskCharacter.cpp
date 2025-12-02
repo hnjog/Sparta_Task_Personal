@@ -97,7 +97,7 @@ void ATaskCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ThisClass, CurrentAimPitch);
+	DOREPLIFETIME_CONDITION(ThisClass, CurrentAimPitch, COND_OwnerOnly);
 	DOREPLIFETIME(ThisClass, bCanAttack);
 }
 
