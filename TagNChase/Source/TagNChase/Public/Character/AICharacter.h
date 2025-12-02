@@ -19,4 +19,17 @@ public:
 
 public:
 	virtual void OnDeath() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	void StartRagdoll();    // 실제로 래그돌 세팅하는 함수
+
+protected:
+	UPROPERTY(ReplicatedUsing = OnRep_IsDead)
+	uint8 bIsDead : 1;
+
+	UFUNCTION()
+	void OnRep_IsDead();
+
 };
