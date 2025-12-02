@@ -27,6 +27,7 @@ public:
 public:
 	void OnCharacterDead(ATaskPlayerController* InController);
 
+	void PaneltyPolice();
 private:
 	UFUNCTION()
 	void OnMainTimerElapsed();

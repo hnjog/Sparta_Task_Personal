@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "BaseCharacter.h"
 #include "InputActionValue.h"
 #include "TaskCharacter.generated.h"
 
@@ -13,11 +13,10 @@ class UInputMappingContext;
 class UInputAction;
 class UAnimMontage;
 class UTNHPTextWidgetComponent;
-class UTNStatusComponent;
 class UUW_HPText;
 
 UCLASS()
-class TAGNCHASE_API ATaskCharacter : public ACharacter
+class TAGNCHASE_API ATaskCharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
 
@@ -40,16 +39,12 @@ public:
 
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
 
-	FORCEINLINE UTNStatusComponent* GetStatus() const { return StatusComponent; }
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
 	TObjectPtr<USpringArmComponent> SpringArm;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
 	TObjectPtr<UCameraComponent> Camera;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
-	TObjectPtr<UTNStatusComponent> StatusComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DXPlayerCharacter|Components")
 	TObjectPtr<UTNHPTextWidgetComponent> HPTextWidgetComponent;
@@ -93,16 +88,13 @@ protected:
 #pragma region Attack
 
 public:
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-
 	void CheckMeleeAttackHit();
 
-	UFUNCTION()
-	void OnDeath();
+	virtual void OnDeath() override;
 
 private:
 	void DrawDebugMeleeAttack(const FColor& DrawColor, FVector TraceStart, FVector TraceEnd, FVector Forward);
-	
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPCMeleeAttack(float InStartMeleeAttackTime);
 
