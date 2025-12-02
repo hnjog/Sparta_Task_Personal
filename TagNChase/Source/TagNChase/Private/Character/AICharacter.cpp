@@ -8,6 +8,7 @@
 #include "BrainComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AAICharacter::AAICharacter()
 {
@@ -17,6 +18,36 @@ AAICharacter::AAICharacter()
 
 void AAICharacter::OnDeath()
 {
+    if (!HasAuthority())
+        return;
+
+    if (bIsDead)
+        return;
+
+    bIsDead = true;
+
+    StartRagdoll();
+
+    ATaskGameModeBase* TGM = Cast<ATaskGameModeBase>(UGameplayStatics::GetGameMode(this));
+    if (IsValid(TGM))
+    {
+        TGM->PaneltyPolice();
+    }
+}
+
+void AAICharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(ThisClass, bIsDead);
+}
+
+void AAICharacter::StartRagdoll()
+{
+    USkeletalMeshComponent* MeshComp = GetMesh();
+    if (!MeshComp)
+        return;
+
     if (AAIController* AICon = Cast<AAIController>(GetController()))
     {
         AICon->StopMovement();
@@ -30,26 +61,28 @@ void AAICharacter::OnDeath()
     if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
     {
         MoveComp->DisableMovement();
+        MoveComp->StopMovementImmediately();
     }
 
-    USkeletalMeshComponent* MeshComp = GetMesh();
-    if (MeshComp)
-    {
-        GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-        MeshComp->SetCollisionProfileName(TEXT("Ragdoll"));
-        MeshComp->SetSimulatePhysics(true);
-        MeshComp->SetAllBodiesSimulatePhysics(true);
-        MeshComp->WakeAllRigidBodies();
-    }
+    MeshComp->SetCollisionProfileName(TEXT("Ragdoll"));
+    MeshComp->SetAllBodiesSimulatePhysics(true);
+    MeshComp->SetSimulatePhysics(true);
+    MeshComp->WakeAllRigidBodies();
 
     DetachFromControllerPendingDestroy();
 
-    SetLifeSpan(10.0f);
+    if (HasAuthority())
+    {
+        SetLifeSpan(10.0f);
+    }
+}
 
-	ATaskGameModeBase* GameMode = Cast<ATaskGameModeBase>(UGameplayStatics::GetGameMode(this));
-	if (HasAuthority() == true && IsValid(GameMode) == true)
-	{
-		GameMode->PaneltyPolice();
-	}
+void AAICharacter::OnRep_IsDead()
+{
+    if (bIsDead)
+    {
+        StartRagdoll();
+    }
 }

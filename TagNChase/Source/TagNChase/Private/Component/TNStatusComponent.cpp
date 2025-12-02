@@ -9,6 +9,7 @@
 UTNStatusComponent::UTNStatusComponent()
 	: CurrentHP(5.f)
 	, MaxHP(5.f)
+	, Role(ERoleType::None)
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
@@ -71,6 +72,8 @@ void UTNStatusComponent::SetRole(ERoleType InRole)
 	}
 
 	Role = InRole;
+
+	OnRoleChanged.Broadcast(Role);
 }
 
 void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -92,4 +95,10 @@ void UTNStatusComponent::OnRep_MaxHP()
 {
 	TN_LOG_SUBOBJECT_ROLE(LogTNNet, Log, TEXT("MaxHP: %.1f"), MaxHP);
 	OnMaxHPChanged.Broadcast(MaxHP);
+}
+
+void UTNStatusComponent::OnRep_Role()
+{
+	TN_LOG_SUBOBJECT_ROLE(LogTNNet, Log, TEXT("Role: %df"), Role);
+	OnRoleChanged.Broadcast(Role);
 }

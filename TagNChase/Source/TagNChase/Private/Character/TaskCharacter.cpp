@@ -47,13 +47,23 @@ ATaskCharacter::ATaskCharacter()
 	Camera->bUsePawnControlRotation = false;
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 
+	RoleHatMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RoleHatMesh"));
+
+	RoleHatMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform,TEXT("Hats"));
+	RoleHatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	RoleHatMesh->SetOnlyOwnerSee(true);
+	RoleHatMesh->SetOwnerNoSee(false); // 오너는 보이게
+
+	RoleHatMesh->CastShadow = false;
+
 	HPTextWidgetComponent = CreateDefaultSubobject<UTNHPTextWidgetComponent>(TEXT("HPTextWidgetComponent"));
 	HPTextWidgetComponent->SetupAttachment(GetRootComponent());
 	HPTextWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	// HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-		// Billboard 방식으로 보이나, 주인공 캐릭터를 가리게됨. 또한 UI와 멀어져도 동일한 크기가 유지되는 문제도 있음.
 	HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
 	HPTextWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HPTextWidgetComponent->SetOnlyOwnerSee(true);
+	HPTextWidgetComponent->SetOwnerNoSee(false);
 }
 
 void ATaskCharacter::BeginPlay()
@@ -76,6 +86,7 @@ void ATaskCharacter::BeginPlay()
 	}
 
 	StatusComponent->OnOutOfCurrentHP.AddUObject(this, &ThisClass::OnDeath);
+	StatusComponent->OnRoleChanged.AddUObject(this, &ThisClass::ApplyRoleHat);
 }
 
 void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -97,7 +108,7 @@ void ATaskCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ThisClass, CurrentAimPitch);
+	DOREPLIFETIME_CONDITION(ThisClass, CurrentAimPitch, COND_OwnerOnly);
 	DOREPLIFETIME(ThisClass, bCanAttack);
 }
 
@@ -325,6 +336,38 @@ void ATaskCharacter::PlayMeleeAttackMontage()
 		AnimInstance->StopAllMontages(0.f);
 		AnimInstance->Montage_Play(MeleeAttackMontage);
 	}
+}
+
+void ATaskCharacter::ApplyRoleHat(ERoleType InRole)
+{
+	if (!RoleHatMesh) 
+		return;
+
+	UStaticMesh* NewHatMesh = nullptr;
+
+	switch (InRole)
+	{
+	case ERoleType::Police:
+		NewHatMesh = PoliceHatMesh;
+		RoleHatMesh->SetRelativeLocation(FVector(0.0, 0.0, 0.0));
+		RoleHatMesh->SetRelativeRotation(FRotator(0.0,90.0,-90.0)); // y z x
+		RoleHatMesh->SetRelativeScale3D(FVector(1.0, 1.0, 1.0));
+		break;
+	case ERoleType::Thief:
+		NewHatMesh = ThiefHatMesh;
+		RoleHatMesh->SetRelativeLocation(FVector(-180.0, -2.0, -1.0));
+		RoleHatMesh->SetRelativeRotation(FRotator(-90.0, -180.0, 180.0)); // y z x
+		RoleHatMesh->SetRelativeScale3D(FVector(1.1,1.1,1.1));
+		break;
+	default:
+		NewHatMesh = nullptr;
+		break;
+	}
+
+	RoleHatMesh->SetStaticMesh(NewHatMesh);
+
+	const bool bVisible = (NewHatMesh != nullptr);
+	RoleHatMesh->SetVisibility(bVisible, true);
 }
 
 void ATaskCharacter::SetHPTextWidget(UUW_HPText* InHPTextWidget)

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
 #include "InputActionValue.h"
+#include "Component/TNStatusComponent.h"
 #include "TaskCharacter.generated.h"
 
 class UCameraComponent;
@@ -127,6 +128,19 @@ protected:
 	float MinAllowedTimeForMeleeAttack;
 #pragma endregion
 
+#pragma region Hats
+	void ApplyRoleHat(ERoleType InRole);
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Role|Hat")
+	TObjectPtr<UStaticMeshComponent> RoleHatMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Role|Hat")
+	TObjectPtr<UStaticMesh> PoliceHatMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Role|Hat")
+	TObjectPtr<UStaticMesh> ThiefHatMesh;
+#pragma endregion
 
 #pragma region HPWidget
 
