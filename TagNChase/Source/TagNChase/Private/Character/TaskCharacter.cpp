@@ -50,10 +50,10 @@ ATaskCharacter::ATaskCharacter()
 	HPTextWidgetComponent = CreateDefaultSubobject<UTNHPTextWidgetComponent>(TEXT("HPTextWidgetComponent"));
 	HPTextWidgetComponent->SetupAttachment(GetRootComponent());
 	HPTextWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	// HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
-		// Billboard 방식으로 보이나, 주인공 캐릭터를 가리게됨. 또한 UI와 멀어져도 동일한 크기가 유지되는 문제도 있음.
 	HPTextWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
 	HPTextWidgetComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HPTextWidgetComponent->SetOnlyOwnerSee(true);
+	HPTextWidgetComponent->SetOwnerNoSee(false);
 }
 
 void ATaskCharacter::BeginPlay()
