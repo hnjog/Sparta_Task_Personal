@@ -18,6 +18,7 @@ enum class ERoleType : uint8
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentHPChangedDelegate, float /*InCurrentHP*/);
 DECLARE_MULTICAST_DELEGATE(FOnOutOfCurrentHPDelegate);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMaxHPChangedDelegate, float /*InMaxHP*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRoleChangedDelegate, ERoleType /*InRole*/);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TAGNCHASE_API UTNStatusComponent : public UActorComponent
@@ -55,6 +56,8 @@ public:
 	FOnOutOfCurrentHPDelegate OnOutOfCurrentHP;
 
 	FOnMaxHPChangedDelegate OnMaxHPChanged;
+
+	FOnRoleChangedDelegate OnRoleChanged;
 
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHP)
