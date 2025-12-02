@@ -4,6 +4,13 @@
 #include "Character/AICharacter.h"
 #include "GameMode/TaskGameModeBase.h"
 #include <Kismet/GameplayStatics.h>
+#include "Controller/NPCController.h"
+
+AAICharacter::AAICharacter()
+{
+	AIControllerClass = ANPCController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+}
 
 void AAICharacter::OnDeath()
 {
