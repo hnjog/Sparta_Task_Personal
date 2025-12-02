@@ -47,6 +47,16 @@ ATaskCharacter::ATaskCharacter()
 	Camera->bUsePawnControlRotation = false;
 	Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 
+	RoleHatMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RoleHatMesh"));
+
+	RoleHatMesh->SetupAttachment(GetMesh(), TEXT("Hats"));
+	RoleHatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	RoleHatMesh->SetOnlyOwnerSee(true);
+	RoleHatMesh->SetOwnerNoSee(false); // 오너는 보이게
+
+	RoleHatMesh->CastShadow = false;
+
 	HPTextWidgetComponent = CreateDefaultSubobject<UTNHPTextWidgetComponent>(TEXT("HPTextWidgetComponent"));
 	HPTextWidgetComponent->SetupAttachment(GetRootComponent());
 	HPTextWidgetComponent->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
@@ -76,6 +86,7 @@ void ATaskCharacter::BeginPlay()
 	}
 
 	StatusComponent->OnOutOfCurrentHP.AddUObject(this, &ThisClass::OnDeath);
+	StatusComponent->OnRoleChanged.AddUObject(this, &ThisClass::ApplyRoleHat);
 }
 
 void ATaskCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -325,6 +336,38 @@ void ATaskCharacter::PlayMeleeAttackMontage()
 		AnimInstance->StopAllMontages(0.f);
 		AnimInstance->Montage_Play(MeleeAttackMontage);
 	}
+}
+
+void ATaskCharacter::ApplyRoleHat(ERoleType InRole)
+{
+	if (!RoleHatMesh) 
+		return;
+
+	UStaticMesh* NewHatMesh = nullptr;
+
+	switch (InRole)
+	{
+	case ERoleType::Police:
+		NewHatMesh = PoliceHatMesh;
+		RoleHatMesh->SetRelativeLocation(FVector(0.0, 0.0, 0.0));
+		RoleHatMesh->SetRelativeRotation(FRotator(-90.0,0.0,90.0));
+		RoleHatMesh->SetRelativeScale3D(FVector(1.0, 1.0, 1.0));
+		break;
+	case ERoleType::Thief:
+		NewHatMesh = ThiefHatMesh;
+		RoleHatMesh->SetRelativeLocation(FVector(-160.0, 0.0, 0.0));
+		RoleHatMesh->SetRelativeRotation(FRotator(180.0, -90.0, -180.0));
+		RoleHatMesh->SetRelativeScale3D(FVector(1.1,1.1,1.1));
+		break;
+	default:
+		NewHatMesh = nullptr;
+		break;
+	}
+
+	RoleHatMesh->SetStaticMesh(NewHatMesh);
+
+	const bool bVisible = (NewHatMesh != nullptr);
+	RoleHatMesh->SetVisibility(bVisible, true);
 }
 
 void ATaskCharacter::SetHPTextWidget(UUW_HPText* InHPTextWidget)
