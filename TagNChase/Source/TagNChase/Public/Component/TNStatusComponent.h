@@ -50,6 +50,9 @@ protected:
 	UFUNCTION()
 	void OnRep_MaxHP();
 
+	UFUNCTION()
+	void OnRep_Role();
+
 public:
 	FOnCurrentHPChangedDelegate OnCurrentHPChanged;
 
@@ -66,7 +69,7 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_MaxHP)
 	float MaxHP;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Replicated)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Role)
 	ERoleType Role;
 
 };
