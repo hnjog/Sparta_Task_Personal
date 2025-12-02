@@ -233,6 +233,11 @@ void ATaskGameModeBase::InitMatch()
 
 				TGS->TimeRun();
 
+				{
+					FString NotificationString = FString::Printf(TEXT("Remain GameTime : %d"), TGS->GetMatchTime());
+					NotifyToAllPlayer(NotificationString);
+				}
+
 				TN_LOG_NET(LogTNNet, Log, TEXT("Match Time : %d"), TGS->GetMatchTime());
 				if (TGS->IsTimeOut())
 				{
