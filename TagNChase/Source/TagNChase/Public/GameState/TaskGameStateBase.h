@@ -40,7 +40,7 @@ public:
 	int32 TimeLimit = 0;
 
 	UPROPERTY(EditAnywhere)
-	int32 BaseMatchTime = 10;
+	int32 BaseMatchTime = 30;
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	EMatchState MatchState = EMatchState::Waiting;
