@@ -49,7 +49,7 @@ ATaskCharacter::ATaskCharacter()
 
 	RoleHatMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RoleHatMesh"));
 
-	RoleHatMesh->SetupAttachment(GetMesh(), TEXT("Hats"));
+	RoleHatMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform,TEXT("Hats"));
 	RoleHatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	RoleHatMesh->SetOnlyOwnerSee(true);
@@ -350,13 +350,13 @@ void ATaskCharacter::ApplyRoleHat(ERoleType InRole)
 	case ERoleType::Police:
 		NewHatMesh = PoliceHatMesh;
 		RoleHatMesh->SetRelativeLocation(FVector(0.0, 0.0, 0.0));
-		RoleHatMesh->SetRelativeRotation(FRotator(-90.0,0.0,90.0));
+		RoleHatMesh->SetRelativeRotation(FRotator(0.0,90.0,-90.0)); // y z x
 		RoleHatMesh->SetRelativeScale3D(FVector(1.0, 1.0, 1.0));
 		break;
 	case ERoleType::Thief:
 		NewHatMesh = ThiefHatMesh;
-		RoleHatMesh->SetRelativeLocation(FVector(-160.0, 0.0, 0.0));
-		RoleHatMesh->SetRelativeRotation(FRotator(180.0, -90.0, -180.0));
+		RoleHatMesh->SetRelativeLocation(FVector(-180.0, -2.0, -1.0));
+		RoleHatMesh->SetRelativeRotation(FRotator(-90.0, -180.0, 180.0)); // y z x
 		RoleHatMesh->SetRelativeScale3D(FVector(1.1,1.1,1.1));
 		break;
 	default:
