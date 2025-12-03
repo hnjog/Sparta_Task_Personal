@@ -76,6 +76,7 @@ void AAICharacter::StartRagdoll()
     if (HasAuthority())
     {
         SetLifeSpan(10.0f);
+        TearOff();
     }
 }
 
