@@ -22,6 +22,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
     void UpdateVisualForLocalViewer(ERoleType InRole);
 
     class UTNStatusComponent* GetPlayerStatusComponent();
@@ -35,6 +37,9 @@ protected:
 		bool bFromSweep,
 		const FHitResult& SweepResult);
 
+	UFUNCTION()
+	void OnRep_ItemMesh();
+
 protected:
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<UStaticMeshComponent> MeshComp;
@@ -47,4 +52,7 @@ protected:
 
     UPROPERTY(EditDefaultsOnly, Category = "Item|Visual")
     TObjectPtr<UStaticMesh> ThiefMesh;
+
+	UPROPERTY(ReplicatedUsing = OnRep_ItemMesh)
+	TObjectPtr<UStaticMesh> ItemMesh;
 };
