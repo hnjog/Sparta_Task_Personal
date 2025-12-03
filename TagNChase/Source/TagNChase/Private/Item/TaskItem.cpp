@@ -19,6 +19,9 @@ ATaskItem::ATaskItem()
     MeshComp->SetupAttachment(Collision);
 
     Collision->OnComponentBeginOverlap.AddDynamic(this, &ATaskItem::OnItemOverlap);
+
+    bReplicates = true;
+    bAlwaysRelevant = true;
 }
 
 void ATaskItem::BeginPlay()
