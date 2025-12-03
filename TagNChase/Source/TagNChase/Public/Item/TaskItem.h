@@ -26,7 +26,7 @@ protected:
 
     class UTNStatusComponent* GetPlayerStatusComponent();
 
-
+	UFUNCTION()
 	void OnItemOverlap(
 		UPrimitiveComponent* OverlappedComp,
 		AActor* OtherActor,
