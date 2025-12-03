@@ -4,17 +4,23 @@
 #include "Item/TaskItem.h"
 #include <Kismet/GameplayStatics.h>
 #include "GameFramework/Character.h"
+#include "Components/SphereComponent.h"
+#include "Character/TaskCharacter.h"
 
-// Sets default values
 ATaskItem::ATaskItem()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+    Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+    Collision->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+    SetRootComponent(Collision);
+
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	SetRootComponent(MeshComp);
+    MeshComp->SetupAttachment(Collision);
+
+    Collision->OnComponentBeginOverlap.AddDynamic(this, &ATaskItem::OnItemOverlap);
 }
 
-// Called when the game starts or when spawned
 void ATaskItem::BeginPlay()
 {
 	Super::BeginPlay();
@@ -72,4 +78,30 @@ UTNStatusComponent* ATaskItem::GetPlayerStatusComponent()
         return nullptr;
     }
     return StatusComponent;
+}
+
+void ATaskItem::OnItemOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    if (OtherActor->IsA(ATaskCharacter::StaticClass()))
+    {
+        // 효과 적용
+        UTNStatusComponent* StatusComp = OtherActor->GetComponentByClass<UTNStatusComponent>();
+        if (IsValid(StatusComp) == false)
+            return;
+
+        switch (StatusComp->GetRole())
+        {
+        case ERoleType::Police:
+            StatusComp->SetCurrentHP(StatusComp->GetCurrentHP() + 1.0);
+            break;
+        case ERoleType::Thief:
+            StatusComp->ApplyProtect();
+            break;
+        default:
+            break;
+        }
+
+        // 효과 적용 후 파괴하기
+        Destroy();
+    }
 }

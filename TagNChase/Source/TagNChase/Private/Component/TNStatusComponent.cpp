@@ -23,6 +23,12 @@ float UTNStatusComponent::ApplyDamage(float InDamage)
 		return 0.f;
 	}
 
+	if (bProtect)
+	{
+		UseProtect();
+		return 0.f;
+	}
+
 	const float PreviousHP = CurrentHP;
 	const float ActualDamage = FMath::Clamp<float>(InDamage, 0, PreviousHP);
 
@@ -74,6 +80,25 @@ void UTNStatusComponent::SetRole(ERoleType InRole)
 	Role = InRole;
 
 	OnRoleChanged.Broadcast(Role);
+}
+
+void UTNStatusComponent::ApplyProtect()
+{
+	if (IsValid(GetOwner()) == false || GetOwner()->HasAuthority() == false)
+	{
+		return;
+	}
+
+	bProtect = true;
+}
+
+void UTNStatusComponent::UseProtect()
+{
+	if (IsValid(GetOwner()) == false || GetOwner()->HasAuthority() == false)
+	{
+		return;
+	}
+	bProtect = false;
 }
 
 void UTNStatusComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
