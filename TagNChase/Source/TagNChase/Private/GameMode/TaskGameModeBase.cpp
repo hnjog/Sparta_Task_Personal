@@ -232,14 +232,7 @@ void ATaskGameModeBase::InitMatch()
 					return;
 				}
 
-				TGS->TimeRun();
-
-				{
-					FString NotificationString = FString::Printf(TEXT("Remain GameTime : %d"), TGS->GetMatchTime());
-					NotifyToAllPlayer(NotificationString);
-				}
-
-				if (TGS->GetMatchTime() % 10 == 0)
+				if (TGS->GetMatchTime() % 5 == 0)
 				{
 					if (UWorld* NowWorld = GetWorld())
 					{
@@ -250,7 +243,13 @@ void ATaskGameModeBase::InitMatch()
 							TN_LOG_NET(LogTNNet, Log, TEXT("Spawn Item!"));
 						}
 					}
+				}
 
+				TGS->TimeRun();
+
+				{
+					FString NotificationString = FString::Printf(TEXT("Remain GameTime : %d"), TGS->GetMatchTime());
+					NotifyToAllPlayer(NotificationString);
 				}
 
 				TN_LOG_NET(LogTNNet, Log, TEXT("Match Time : %d"), TGS->GetMatchTime());
