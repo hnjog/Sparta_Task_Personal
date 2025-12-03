@@ -40,6 +40,9 @@ public:
 	ERoleType GetRole() const { return Role; }
 	void SetRole(ERoleType InRole);
 
+	void ApplyProtect();
+	void UseProtect();
+
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -72,4 +75,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Role)
 	ERoleType Role;
 
+	// 당장은 보호막 용도를 표현할 생각은 없기에 테스트 용
+	bool bProtect;
 };

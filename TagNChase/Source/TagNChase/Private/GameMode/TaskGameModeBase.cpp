@@ -7,6 +7,7 @@
 #include "GameState/TaskGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "TagNChase.h"
+#include "Item/ItemSpawnSubsystem.h"
 
 void ATaskGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
@@ -236,6 +237,20 @@ void ATaskGameModeBase::InitMatch()
 				{
 					FString NotificationString = FString::Printf(TEXT("Remain GameTime : %d"), TGS->GetMatchTime());
 					NotifyToAllPlayer(NotificationString);
+				}
+
+				if (TGS->GetMatchTime() % 10 == 0)
+				{
+					if (UWorld* NowWorld = GetWorld())
+					{
+						UItemSpawnSubsystem* SpawnSys = NowWorld->GetSubsystem<UItemSpawnSubsystem>();
+						if (IsValid(SpawnSys))
+						{
+							SpawnSys->SpawnItemInRandomVolume();
+							TN_LOG_NET(LogTNNet, Log, TEXT("Spawn Item!"));
+						}
+					}
+
 				}
 
 				TN_LOG_NET(LogTNNet, Log, TEXT("Match Time : %d"), TGS->GetMatchTime());
