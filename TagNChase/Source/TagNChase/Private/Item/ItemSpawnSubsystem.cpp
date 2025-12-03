@@ -5,6 +5,7 @@
 #include "Item/ItemSpawnVolume.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Item/TaskItem.h"
+#include "TagNChase.h"
 
 void UItemSpawnSubsystem::RegisterVolume(AItemSpawnVolume* Volume)
 {
@@ -22,7 +23,10 @@ void UItemSpawnSubsystem::UnregisterVolume(AItemSpawnVolume* Volume)
 void UItemSpawnSubsystem::SpawnItemInRandomVolume()
 {
     if (SpawnVolumes.Num() <= 0)
+    {
+        UE_LOG(LogTNNet, Warning, TEXT("SpawnVolume None!"));
         return;
+    }
 
     int32 Index = FMath::RandRange(0, SpawnVolumes.Num() - 1);
 
@@ -32,13 +36,28 @@ void UItemSpawnSubsystem::SpawnItemInRandomVolume()
         FTransform Transform(FRotator::ZeroRotator, SpawnLocation);
         UClass* ItemClass = Volume->GetItemClass();
 
+        if (ItemClass == nullptr)
+        {
+            UE_LOG(LogTNNet, Warning, TEXT("ItemClass Null!"));
+            return;
+        }
+
         FActorSpawnParameters Params;
         Params.SpawnCollisionHandlingOverride =
             ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
         if (UWorld* WorldNow = GetWorld())
         {
-            WorldNow->SpawnActor<ATaskItem>(ItemClass, Transform, Params);
+            ATaskItem* SpawnItem = WorldNow->SpawnActor<ATaskItem>(ItemClass, Transform, Params);
+
+            if (SpawnItem == nullptr)
+            {
+                UE_LOG(LogTNNet, Warning, TEXT("ItemSpawn Failed!"));
+            }
+            else
+            {
+                UE_LOG(LogTNNet, Warning, TEXT("ItemSpawn Success!"));
+            }
         }
     }
 }

@@ -247,6 +247,7 @@ void ATaskGameModeBase::InitMatch()
 						if (IsValid(SpawnSys))
 						{
 							SpawnSys->SpawnItemInRandomVolume();
+							TN_LOG_NET(LogTNNet, Log, TEXT("Spawn Item!"));
 						}
 					}
 

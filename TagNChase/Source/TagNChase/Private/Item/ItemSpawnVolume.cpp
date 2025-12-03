@@ -8,6 +8,7 @@
 #include "NavigationSystem.h"
 #include "Item/ItemSpawnSubsystem.h"
 #include "Item/TaskItem.h"
+#include "TagNChase.h"
 
 AItemSpawnVolume::AItemSpawnVolume()
 {
@@ -44,6 +45,7 @@ void AItemSpawnVolume::BeginPlay()
 		if (UItemSpawnSubsystem* Subsys = World->GetSubsystem<UItemSpawnSubsystem>())
 		{
 			Subsys->RegisterVolume(this);
+			TN_LOG_NET(LogTNNet, Log, TEXT("Register Volume!"));
 		}
 	}
 }
